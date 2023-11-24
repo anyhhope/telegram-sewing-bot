@@ -4,9 +4,16 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from handlers import setup_routers
+import psycopg2 
 
 from config_reader import config
 
+conn = psycopg2.connect(
+    host = config.host.get_secret_value(),
+    database = config.database.get_secret_value(),
+    user = config.user_base.get_secret_value(),
+    password = config.password.get_secret_value()
+)
 dp = Dispatcher()
 
 
