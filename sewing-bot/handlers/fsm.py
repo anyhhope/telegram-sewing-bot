@@ -68,6 +68,14 @@ start_state_keaboard.row(
     KeyboardButton(text="Предыдущий результат")
 )
 
+start_keaboard = ReplyKeyboardBuilder()
+start_keaboard.row(
+    KeyboardButton(text="Случайная выкройка")
+)
+start_keaboard.row(KeyboardButton(
+    text="Подобрать индивидуально",
+))
+
 @router.message(F.text.lower() == "подобрать индивидуально", StateFilter(default_state))
 async def send_first_state_keyboard(message: Message, state: FSMContext):
     await message.answer('Выберите действие', reply_markup=start_state_keaboard.as_markup(resize_keyboard=True))
@@ -78,6 +86,21 @@ async def send_first_state_keyboard(message: Message, state: FSMContext):
     await message.answer('Тогда начнем подбор)', reply_markup=ReplyKeyboardRemove())
     await message.answer(text='Пожалуйста, введите ваше <b>ФИО в три слова</b> \n\n Чтобы отменить действие напишите Отмена')
     await state.set_state(FSMFillForm.fill_fio)
+
+@router.message(F.text.lower() == "предыдущий результат", StateFilter(FSMFillForm.choose_first))
+async def send_first_state_keyboard(message: Message, state: FSMContext):
+    user_data = await state.get_data()
+    text = ''
+    text_2 = ''
+    if len(user_data) != 0:
+        hearts = '💚❤️🖤💜💙💖💛🧡🤍'
+        heart = random.choice(hearts)
+        text = f"Ваши данные\n\nФИО: <b>{user_data['fio']}</b>\nemail: <b>{user_data['email']}</b>\nКатегория: <b>{get_key(categories, user_data['category'])}</b>\nСложность: <b>{get_key(difficulty, user_data['difficulty'])}</b>\nСезон: <b>{get_key(season, user_data['season'])}</b>\nСтиль: <b>{get_key(style, user_data['style'])}</b>\nОбъем: <b>{get_key(volume, user_data['volume'])}</b>\nСтоимость: <b>{user_data['price']}</b>"
+        text_2 = f'Выкройка для вас{heart}\n\n<b>{user_data["title"]}</b>\nСтоимость: {user_data["price"]} руб\n\n<a href="{user_data["source"]}">Перейти на сайт</a>'
+    else:
+        text = 'Вы еще не подбирали выкройку. \n<b>Нажмите начать</b>'
+    await message.answer(text = text)
+    await message.answer(text = text_2, reply_markup=start_state_keaboard.as_markup(resize_keyboard=True))
 
 @router.message(StateFilter(FSMFillForm.fill_fio), 
                 lambda x: all(word.isalpha() for word in x.text.split()) and len(x.text.split()) == 3)
@@ -173,33 +196,43 @@ async def process_email_sent(message: Message, state: FSMContext):
     await message.answer(text = text)
 
     cur = conn.cursor()
-    query = """
+    query = "SELECT title, source, price FROM pattern WHERE "
+    params = []
+
+    for key, field in user_data.items():
+        if key not in ['fio', 'amount', 'email', 'price']:
+            if field not in ['none', '0']:
+                query += f"{key} = %s AND "
+                params.append(field)
+    
+    query = query[:-5]
+    query += ' ORDER BY RANDOM() LIMIT 1;'
+
+    query_2 = """
         SELECT title, source, price FROM pattern 
-        WHERE category = %s AND difficulty = %s AND season = %s AND
-        style = %s AND volume = %s
+        WHERE category = %s AND difficulty = %s
         ORDER BY RANDOM() LIMIT 1;
     """
 
-    params = (user_data['category'], user_data['difficulty'], user_data['season'], user_data['style'], user_data['volume'])
+    params_2 = (user_data['category'], user_data['difficulty'])
+
     cur.execute(query, params)
     row = cur.fetchone()
+
     if row is not None:
         title, source, price = row
     else:
-        title, source, price = None, None, None
+        cur.execute(query_2, params_2)
+        title, source, price = cur.fetchone()
     cur.close()
 
-    # query = "SELECT title, source, price FROM pattern WHERE "
-    # params = []
-
-    for key, field in user_data.items():
-        print('key', key, 'field', field)
-
+    await state.update_data(title = title, source = source, price = price)
     hearts = '💚❤️🖤💜💙💖💛🧡🤍'
     heart = random.choice(hearts)
     text = f'Выкройка для вас{heart}\n\n<b>{title}</b>\nСтоимость: {price} руб\n\n<a href="{source}">Перейти на сайт</a>'
-    await message.answer(text = text)
+    await message.answer(text = text, reply_markup=start_keaboard.as_markup(resize_keyboard=True))
+    await state.set_state(None)
 
 @router.message(StateFilter(FSMFillForm.fill_price))
 async def warning_email(message: Message):
-    await message.answer(text = 'Введите стоимоть в корректном формате \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text = 'Введите стоимость в корректном формате \n\n Чтобы отменить действие напишите Отмена')

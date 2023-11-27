@@ -29,3 +29,8 @@ async def process_cancel_command(message: Message, state: FSMContext):
     await message.answer(
         text="Уже уходите? До встречи)"
     )
+
+@router.message(F.text.lower()=='отмена', ~StateFilter(default_state))
+async def process_finish_command_any(message: Message, state: FSMContext):
+    await message.answer(text = 'Отмена заполнения данных', reply_markup=start_keaboard.as_markup(resize_keyboard=True))
+    await state.clear()
