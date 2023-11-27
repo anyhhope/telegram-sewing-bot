@@ -27,5 +27,5 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
 @router.message(F.text.lower()=='отмена', StateFilter(default_state))
 async def process_cancel_command(message: Message, state: FSMContext):
     await message.answer(
-        text="Если вы хотите выйти из бота, то закройте его:)"
+        text="Уже уходите? До встречи)"
     )

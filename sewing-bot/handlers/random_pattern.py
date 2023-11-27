@@ -26,6 +26,6 @@ def get_pattern():
     return message
 
 @router.message(F.text.lower() == "случайная выкройка", StateFilter(default_state))
-async def send_travel_advice(message: Message, state: FSMContext):
+async def send_random_pattern(message: Message, state: FSMContext):
     message_answer = get_pattern()
     await message.answer(message_answer)
