@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from handlers import setup_routers
 import psycopg2 
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 
 from config_reader import config
 
@@ -14,7 +15,9 @@ conn = psycopg2.connect(
     user = config.user_base.get_secret_value(),
     password = config.password.get_secret_value()
 )
-dp = Dispatcher()
+redis = Redis(host='localhost')
+storage = RedisStorage(redis=redis)
+dp = Dispatcher(storage=storage)
 
 
 async def main() -> None:
