@@ -84,7 +84,7 @@ async def send_first_state_keyboard(message: Message, state: FSMContext):
 @router.message(F.text.lower() == "начать", StateFilter(FSMFillForm.choose_first))
 async def send_first_state_keyboard(message: Message, state: FSMContext):
     await message.answer('Тогда начнем подбор)', reply_markup=ReplyKeyboardRemove())
-    await message.answer(text='Пожалуйста, введите ваше <b>ФИО в три слова</b> \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text='Пожалуйста, введите ваше <b>ФИО в три слова</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start')
     await state.set_state(FSMFillForm.fill_fio)
 
 @router.message(F.text.lower() == "предыдущий результат", StateFilter(FSMFillForm.choose_first))
@@ -100,7 +100,7 @@ async def send_first_state_keyboard(message: Message, state: FSMContext):
     else:
         text = 'Вы еще не подбирали выкройку. \n<b>Нажмите начать</b>'
     await message.answer(text = text)
-    await message.answer(text = text_2, reply_markup=start_state_keaboard.as_markup(resize_keyboard=True))
+    if text_2 != '': await message.answer(text = text_2, reply_markup=start_state_keaboard.as_markup(resize_keyboard=True))
 
 @router.message(StateFilter(FSMFillForm.fill_fio), 
                 lambda x: all(word.isalpha() for word in x.text.split()) and len(x.text.split()) == 3)
@@ -108,12 +108,12 @@ async def process_name_sent(message: Message, state: FSMContext):
     await state.update_data(fio=message.text)
     await message.answer(text='Имя сохранено')
     await state.update_data(amount=0)
-    await message.answer(text='Введите ваш <b>email</b> \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text='Введите ваш <b>email</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start')
     await state.set_state(FSMFillForm.fill_email)
 
 @router.message(StateFilter(FSMFillForm.fill_fio))
 async def warning_name(message: Message):
-    await message.answer(text = 'Введите ФИО в 3 слова \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text = 'Введите ФИО в 3 слова \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start')
 
 def is_valid_email(email: str) -> bool:
     email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
@@ -125,20 +125,20 @@ async def process_email_sent(message: Message, state: FSMContext):
     await state.update_data(email=message.text)
     await message.answer(text='Email сохранен')
     await state.update_data(amount=1)
-    await message.answer(text='Выберите <b>категорию выкройки</b> \n\n Чтобы отменить действие напишите Отмена', 
+    await message.answer(text='Выберите <b>категорию выкройки</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup = create_keyboard(categories))
     await state.set_state(FSMFillForm.fill_difficulty)
 
 @router.message(StateFilter(FSMFillForm.fill_email))
 async def warning_email(message: Message):
-    await message.answer(text = 'Введите email в корректном формате \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text = 'Введите email в корректном формате \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start')
 
 @router.callback_query(StateFilter(FSMFillForm.fill_difficulty), F.data.in_(list(categories.values())))
 async def process_topic_sent(callback: CallbackQuery, state: FSMContext):
     await state.update_data(category=callback.data)
     await callback.message.answer(text='Категория выбрана')
     await state.update_data(amount=1)
-    await callback.message.answer(text='Выберите <b>сложность пошива выкройки</b> \n\n Чтобы отменить действие напишите Отмена', 
+    await callback.message.answer(text='Выберите <b>сложность пошива выкройки</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup = create_keyboard(difficulty))
     await state.set_state(FSMFillForm.fill_season)
 
@@ -147,7 +147,7 @@ async def process_topic_sent(callback: CallbackQuery, state: FSMContext):
     await state.update_data(difficulty=callback.data)
     await callback.message.answer(text='Сложность выбрана')
     await state.update_data(amount=1)
-    await callback.message.answer(text='Выберите <b>сезон</b> \n\n Чтобы отменить действие напишите Отмена', 
+    await callback.message.answer(text='Выберите <b>сезон</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup = create_keyboard(season))
     await state.set_state(FSMFillForm.fill_season)
 
@@ -156,7 +156,7 @@ async def process_topic_sent(callback: CallbackQuery, state: FSMContext):
     await state.update_data(season=callback.data)
     await callback.message.answer(text='Сезон выбран')
     await state.update_data(amount=1)
-    await callback.message.answer(text='Выберите <b>стиль</b> \n\n Чтобы отменить действие напишите Отмена', 
+    await callback.message.answer(text='Выберите <b>стиль</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup = create_keyboard(style))
     await state.set_state(FSMFillForm.fill_style)
 
@@ -165,7 +165,7 @@ async def process_topic_sent(callback: CallbackQuery, state: FSMContext):
     await state.update_data(style=callback.data)
     await callback.message.answer(text='Стиль выбран')
     await state.update_data(amount=1)
-    await callback.message.answer(text='Выберите <b>объем изделия</b> \n\n Чтобы отменить действие напишите Отмена', 
+    await callback.message.answer(text='Выберите <b>объем изделия</b> \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup = create_keyboard(volume))
     await state.set_state(FSMFillForm.fill_volume)
 
@@ -174,13 +174,19 @@ async def process_topic_sent(callback: CallbackQuery, state: FSMContext):
     await state.update_data(volume=callback.data)
     await callback.message.answer(text='Объем выбран')
     await state.update_data(amount=1)
-    await callback.message.answer(text='Введите <b>диапазон стоимости в рублях</b>\nВ формате "От 0 до 1000" \n\n Чтобы отменить действие напишите Отмена', 
+    await callback.message.answer(text='Введите <b>диапазон стоимости в рублях</b>\nВ формате "От 0 до 1000" \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start', 
                          reply_markup=ReplyKeyboardRemove())
     await state.set_state(FSMFillForm.fill_price)
 
 def is_valid_price_format(s):
     pattern = r"^От \d+ до \d+$"
-    return bool(re.match(pattern, s))
+    if not bool(re.match(pattern, s)):
+        return False
+    parts = s.split()
+    low_price = int(parts[1])
+    high_price = int(parts[3])
+    return low_price >= 0 and low_price <= high_price
+
 
 def get_key(dictionary, value):
     for key, val in dictionary.items():
@@ -200,13 +206,22 @@ async def process_email_sent(message: Message, state: FSMContext):
     params = []
 
     for key, field in user_data.items():
-        if key not in ['fio', 'amount', 'email', 'price']:
+        if key not in ['fio', 'amount', 'email', 'price', 'title', 'source']:
             if field not in ['none', '0']:
                 query += f"{key} = %s AND "
                 params.append(field)
     
-    query = query[:-5]
+    query += 'PRICE BETWEEN %s AND %s'
     query += ' ORDER BY RANDOM() LIMIT 1;'
+
+    price_split = user_data['price'].split()
+    low_price = int(price_split[1])
+    high_price = int(price_split[3])
+
+    params.append(low_price)
+    params.append(high_price)
+    print('query', query)
+    print('paremas', params)
 
     query_2 = """
         SELECT title, source, price FROM pattern 
@@ -219,9 +234,11 @@ async def process_email_sent(message: Message, state: FSMContext):
     cur.execute(query, params)
     row = cur.fetchone()
 
+    flag = True
     if row is not None:
         title, source, price = row
     else:
+        flag = False
         cur.execute(query_2, params_2)
         title, source, price = cur.fetchone()
     cur.close()
@@ -229,10 +246,13 @@ async def process_email_sent(message: Message, state: FSMContext):
     await state.update_data(title = title, source = source, price = price)
     hearts = '💚❤️🖤💜💙💖💛🧡🤍'
     heart = random.choice(hearts)
-    text = f'Выкройка для вас{heart}\n\n<b>{title}</b>\nСтоимость: {price} руб\n\n<a href="{source}">Перейти на сайт</a>'
+    text = ''
+    if flag == False: 
+        text += 'К сожалением по всем параметрам выкройку найти не удалось(( Предлагаем выкройку в выбранной категории и уровнем сложности!\n\n\n'
+    text += f'Выкройка для вас{heart}\n\n<b>{title}</b>\nСтоимость: {price} руб\n\n<a href="{source}">Перейти на сайт</a>'
     await message.answer(text = text, reply_markup=start_keaboard.as_markup(resize_keyboard=True))
     await state.set_state(None)
 
 @router.message(StateFilter(FSMFillForm.fill_price))
 async def warning_email(message: Message):
-    await message.answer(text = 'Введите стоимость в корректном формате \n\n Чтобы отменить действие напишите Отмена')
+    await message.answer(text = 'Введите стоимость в корректном формате \n\nЧтобы прервать заполнение напишите <b>Отмена</b>\nЧтобы удалить данные и начать заново напишите /start')
