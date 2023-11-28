@@ -15,7 +15,11 @@ conn = psycopg2.connect(
     user = config.user_base.get_secret_value(),
     password = config.password.get_secret_value()
 )
-redis = Redis(host='localhost')
+redis = Redis(
+  host = config.redis_host.get_secret_value(),
+  port = config.redis_port.get_secret_value(),
+  password = config.redis_password.get_secret_value()
+)
 storage = RedisStorage(redis=redis)
 dp = Dispatcher(storage=storage)
 
